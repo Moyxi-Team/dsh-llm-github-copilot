@@ -2,22 +2,22 @@
 
 [English](README.md) | 中文
 
+> **上游/原项目：** [`lujianjun19/dsh-llm-github-copilot`](https://github.com/lujianjun19/dsh-llm-github-copilot)。当前仓库是基于该项目源码、由 **Moyxi-Team 独立维护**的组织仓库；此处标注来源，不代表声称 GitHub 将本仓库标记为 fork。组织版额外提供已保存的 GitHub Copilot quota 账号切换。详见[项目来源与差异](#项目来源与差异)。
+
+## 项目来源与差异
+
+差异核对时间为 2026-11-06，基准为上游 `main` 的 [`0e327a9`](https://github.com/lujianjun19/dsh-llm-github-copilot/commit/0e327a90a47595ab732e72ec38e23cad7feb9633)。组织仓库 `main` 当前位于 [`e106b4e`](https://github.com/Moyxi-Team/dsh-llm-github-copilot/commit/e106b4e389b2a3135bf0db477a19ca7ab100c503)，比该上游基准多两个提交。可核实的组织版额外差异包括：
+
+- 新增 Host API 和中英文设置界面，用于切换已保存的 `github_copilot` quota 账号。
+- 按账号 ID 配对 quota 账号元数据与 secrets，再通过 Harness 凭据服务激活所选凭据。浏览器只接收公开账号信息和活动状态，不会收到 token 或 token 后缀。
+- 新增基于合成 fixture 的 quota 合并、账号切换、错误处理和浏览器行为测试。
+- 更新本仓库的双语说明及组织安装地址。上游 npm 包仍是独立发布渠道：2026-11-06 核实到的版本为 `0.4.12`；本 GitHub 仓库的变更不会自动更新该 npm 包，通过 npm 更新也不会更新从 GitHub 安装的版本。
+
 为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 提供 GitHub Copilot 登录。
 
 本插件提供 GitHub OAuth 设备流登录页面和斜杠命令，并写入 Harness 内置 `github-copilot` 提供方使用的凭据。它**不注册 LLM 适配器**，也不维护模型目录：token 交换与刷新、模型可用性、请求、图片和流式处理均由 Harness 的 `@deepseek-ai/dsh-llm-pi-ai` 路由负责。可用模型取决于该路由的目录和账号权限，而不只取决于 Copilot 订阅。参见 [ADR-0002](docs/adr/0002-narrow-to-credential-provider.md)。
 
-## 项目来源与差异
-
-这是由 **Moyxi-Team 维护的 GitHub 源码版本**，基于上游 [`lujianjun19/dsh-llm-github-copilot`](https://github.com/lujianjun19/dsh-llm-github-copilot) 项目。它不是上游仓库本身，也不是 DeepSeek 或 GitHub 官方产品。
-
-差异核对时间为 2026-11-06：组织仓库 `main` 位于 [`00b6841`](https://github.com/Moyxi-Team/dsh-llm-github-copilot/commit/00b68415546692a4600fd004737ccd9e75cfddfc)，比上游 `main` 的 [`0e327a9`](https://github.com/lujianjun19/dsh-llm-github-copilot/commit/0e327a90a47595ab732e72ec38e23cad7feb9633) 多一个提交。组织版新增了**在已保存的 `github_copilot` quota 账号之间切换**：按账号 ID 配对公开账号信息和 secrets，通过 Harness 凭据服务激活所选账号，并提供中英文设置界面。浏览器只会收到账号信息和活动状态，不会收到 token 或 token 后缀；相关测试使用合成数据。
-
-两种安装渠道彼此独立：
-
-- **Moyxi-Team GitHub 源码版**（`github:Moyxi-Team/dsh-llm-github-copilot`）安装组织仓库的 `main` 分支；本文介绍的账号切换功能通过此渠道提供。
-- **上游 npm 包**（`@lujianjun19/dsh-llm-github-copilot`）沿用上游包名并按上游 npm 发布更新。截至 2026-11-06 核实到的最新发布版为 `0.4.12`；组织仓库的变更不会自动进入该 npm 包。通过 npm 更新也不会更新从 GitHub 安装的版本。
-
-切换账号要求 `${DSH_HOME:-~/.dsh}` 中的 `quota-config.json` 和 `quota-secrets.json` 可读且格式有效，并且其中存在 `github_copilot` 账号及所选账号支持的凭据。本插件只读取这些文件以提供切换功能，再通过 Harness 写入所选凭据；不会创建、编辑或删除 quota 账号或文件。完整行为和限制见[切换已保存账号](#切换已保存账号)。
+本项目不是 DeepSeek 或 GitHub 官方产品。切换账号要求 `${DSH_HOME:-~/.dsh}` 中的 `quota-config.json` 和 `quota-secrets.json` 可读且格式有效，并且其中存在 `github_copilot` 账号及所选账号支持的凭据。本插件只读取这些文件以提供切换功能，再通过 Harness 写入所选凭据；不会创建、编辑或删除 quota 账号或文件。完整行为和限制见[切换已保存账号](#切换已保存账号)。
 
 ## 依赖要求
 

@@ -77,9 +77,10 @@ for (const { path, text } of readmes) {
   test(`${path} distinguishes the organization source from the upstream project and npm package`, () => {
     assert.ok(text.includes('Moyxi-Team/dsh-llm-github-copilot'))
     assert.ok(text.includes('@lujianjun19/dsh-llm-github-copilot'))
-    assert.ok(text.includes('00b68415546692a4600fd004737ccd9e75cfddfc'))
+    assert.ok(text.includes('e106b4e389b2a3135bf0db477a19ca7ab100c503'))
     assert.ok(text.includes('0e327a90a47595ab732e72ec38e23cad7feb9633'))
     assert.doesNotMatch(text, /Moyxi-Teacher/, 'the renamed organization handle must not appear')
+    assert.ok(text.indexOf('lujianjun19/dsh-llm-github-copilot') < text.indexOf('DeepSeek Harness'), 'upstream attribution must appear before the project description')
   })
 
   test(`${path} shell examples use the published package identity and real npm scripts`, () => {

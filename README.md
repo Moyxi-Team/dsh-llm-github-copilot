@@ -2,22 +2,22 @@
 
 English | [中文](README.zh.md)
 
+> **Upstream / original project:** [`lujianjun19/dsh-llm-github-copilot`](https://github.com/lujianjun19/dsh-llm-github-copilot). This is the separately maintained **Moyxi-Team repository**, based on that project's source; this attribution does not claim that GitHub marks this repository as a fork. The organization-specific addition is saved GitHub Copilot quota-account switching. See [Project origin and differences](#project-origin-and-differences).
+
+## Project origin and differences
+
+The comparison was checked on 2026-11-06 against upstream `main` at [`0e327a9`](https://github.com/lujianjun19/dsh-llm-github-copilot/commit/0e327a90a47595ab732e72ec38e23cad7feb9633). Organization `main` is at [`e106b4e`](https://github.com/Moyxi-Team/dsh-llm-github-copilot/commit/e106b4e389b2a3135bf0db477a19ca7ab100c503), two commits ahead of that upstream baseline. The verifiable organization-specific differences are:
+
+- Adds Host endpoints and a bilingual Settings UI for switching among saved `github_copilot` quota accounts.
+- Pairs quota account metadata and secrets by account ID, then activates the selected credential through the Harness credential service. The browser receives public account metadata and active state, never tokens or token suffixes.
+- Adds synthetic-fixture tests for quota merging, account switching, error handling, and browser behavior.
+- Updates this repository's bilingual documentation and organization install references. The upstream npm package remains a separate release channel: the version checked on 2026-11-06 was `0.4.12`; changes on this GitHub repository do not automatically update that package, and npm updates do not update a GitHub-sourced installation.
+
 GitHub Copilot sign-in for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
 
 This plugin provides a GitHub OAuth device-flow page and slash commands, then writes the credential used by the Harness's built-in `github-copilot` provider. It registers **no LLM adapter** and owns no model catalog: token exchange and refresh, model availability, requests, images, and streaming belong to the Harness's `@deepseek-ai/dsh-llm-pi-ai` route. Available models depend on that route's catalog and your account's access, not just your Copilot plan. See [ADR-0002](docs/adr/0002-narrow-to-credential-provider.md).
 
-## Project origin and differences
-
-This is the **Moyxi-Team-maintained GitHub source** derived from the upstream [`lujianjun19/dsh-llm-github-copilot`](https://github.com/lujianjun19/dsh-llm-github-copilot) project. It is not the upstream project itself, and it is not an official DeepSeek or GitHub product.
-
-The comparison was checked on 2026-11-06: organization `main` was at [`00b6841`](https://github.com/Moyxi-Team/dsh-llm-github-copilot/commit/00b68415546692a4600fd004737ccd9e75cfddfc), one commit ahead of upstream `main` at [`0e327a9`](https://github.com/lujianjun19/dsh-llm-github-copilot/commit/0e327a90a47595ab732e72ec38e23cad7feb9633). The organization commit adds **switching among saved `github_copilot` quota accounts**: it pairs account metadata and secrets by account ID, uses the Harness credential service to activate a selected account, and provides a bilingual settings UI. The browser receives account metadata and active state, never tokens or token suffixes. It also adds synthetic-fixture tests for this behavior.
-
-The two installation channels are separate:
-
-- **Moyxi-Team GitHub source** (`github:Moyxi-Team/dsh-llm-github-copilot`) installs the organization repository's `main` branch and is the channel for the account-switching changes described here.
-- **Upstream npm package** (`@lujianjun19/dsh-llm-github-copilot`) is published under the upstream package name and follows upstream npm releases. The latest published version checked on 2026-11-06 was `0.4.12`; it does not acquire organization-only changes just because this GitHub repository changes. npm updates do not update a GitHub-sourced installation.
-
-Account switching requires readable, valid `quota-config.json` and `quota-secrets.json` files in `${DSH_HOME:-~/.dsh}`, with saved `github_copilot` accounts and a supported credential for the chosen account. This plugin only reads those files to offer a switch and writes the selected credential through Harness; it does not create, edit, or delete quota accounts or files. See [Switch saved accounts](#switch-saved-accounts) for the full behavior and limits.
+This project is not an official DeepSeek or GitHub product. Account switching requires readable, valid `quota-config.json` and `quota-secrets.json` files in `${DSH_HOME:-~/.dsh}`, with saved `github_copilot` accounts and a supported credential for the chosen account. This plugin only reads those files to offer a switch and writes the selected credential through Harness; it does not create, edit, or delete quota accounts or files. See [Switch saved accounts](#switch-saved-accounts) for the full behavior and limits.
 
 ## Requirements
 
