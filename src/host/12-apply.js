@@ -286,6 +286,10 @@ function apply(ctx, config) {
           methods: ["POST"],
           requestBody: "buffered",
           fetch: fetchAction(logout)
+        }),
+        ...registerAccountSwitchingRoutes(cctx.connection, {
+          resolveRawOAuthToken,
+          storeRawOAuthToken
         })
       ];
       return async () => {
@@ -376,4 +380,3 @@ function apply(ctx, config) {
   });
 }
 //#endregion
-

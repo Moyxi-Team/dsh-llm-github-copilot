@@ -38,7 +38,10 @@ for (const [locale, closeLabel] of [['en', 'Close'], ['zh', '关闭']]) {
       },
     })
     assert.ok(components.has('settings.section:github-copilot'))
-    renderToStaticMarkup(React.createElement(components.get('settings.section:github-copilot')))
+    const markup = renderToStaticMarkup(React.createElement(components.get('settings.section:github-copilot')))
+    assert.match(markup, new RegExp(locale === 'zh' ? '已保存的 GitHub Copilot 账号' : 'Saved GitHub Copilot accounts'))
+    assert.match(markup, new RegExp(locale === 'zh' ? '正在读取已保存的账号' : 'Loading saved accounts'))
+    assert.doesNotMatch(markup, /fixture-secret/)
   })
 }
 

@@ -1,27 +1,38 @@
     function GitHubCopilotSettings() {
       useLocaleRevision();
       const [status, setStatus] = useState();
+      const [accounts, setAccounts] = useState();
+      const [accountsError, setAccountsError] = useState();
       const [busy, setBusy] = useState(false);
+      const [switchingAccountId, setSwitchingAccountId] = useState();
       const [error, setError] = useState();
       const [copied, setCopied] = useState(false);
       const [confirmLogout, setConfirmLogout] = useState(false);
       const [acknowledged, setAcknowledged] = useState(false);
 
       const refresh = async () => {
+        let next;
         try {
-          const next = await request("/status");
+          next = await request("/status");
           setStatus(next);
-          setError(void 0);
-          return next;
         } catch (cause) {
           setError(cause instanceof Error ? cause.message : String(cause));
           return void 0;
         }
+        try {
+          const accountResult = await request("/accounts");
+          setAccounts(accountResult.accounts);
+          setAccountsError(void 0);
+        } catch (cause) {
+          setAccountsError(cause instanceof Error ? cause.message : String(cause));
+        }
+        setError(void 0);
+        return next;
       };
       useEffect(() => {
         let alive = true;
-        request("/status").then(
-          (value) => { if (alive) setStatus(value); },
+        refresh().then(
+          () => {},
           (cause) => { if (alive) setError(cause instanceof Error ? cause.message : String(cause)); }
         );
         return () => { alive = false; };
@@ -50,12 +61,28 @@
         setError(void 0);
         try {
           setStatus(await request("/logout", "POST"));
+          await refresh();
           setConfirmLogout(false);
           setAcknowledged(false);
         } catch (cause) {
           setError(cause instanceof Error ? cause.message : String(cause));
         } finally {
           setBusy(false);
+        }
+      };
+      const switchAccount = async (accountId) => {
+        setBusy(true);
+        setSwitchingAccountId(accountId);
+        setError(void 0);
+        try {
+          const result = await request("/switch", "POST", { accountId });
+          setAccounts(result.accounts);
+          await refresh();
+        } catch (cause) {
+          setError(cause instanceof Error ? cause.message : String(cause));
+        } finally {
+          setBusy(false);
+          setSwitchingAccountId(void 0);
         }
       };
       const copy = async () => {
@@ -121,7 +148,49 @@
                       jsx("p", { style: css.hint, children: text("whereToSelect", { provider: status.provider ?? "github-copilot" }) })
                     ]
                   })
-                : null
+                : null,
+              jsxs("div", {
+                style: css.accountList,
+                children: [
+                  jsx("strong", { style: css.body, children: text("accountsTitle") }),
+                  jsx("p", { style: css.hint, children: text("accountsIntro") }),
+                  accountsError
+                    ? jsx("p", { role: "alert", style: css.error, children: accountsError })
+                    : accounts === void 0
+                      ? jsx("p", { style: css.hint, children: text("accountsLoading") })
+                      : accounts.length === 0
+                        ? jsx("p", { style: css.hint, children: text("accountsEmpty") })
+                        : accounts.map((account) => jsxs("div", {
+                          style: css.accountRow,
+                          children: [
+                            jsxs("div", {
+                              style: css.accountMeta,
+                              children: [
+                                jsxs("span", {
+                                  style: css.body,
+                                  children: [
+                                    account.name,
+                                    account.active ? ` · ${text("accountActive")}` : ""
+                                  ]
+                                }),
+                                jsx("span", { style: css.accountId, children: account.id }),
+                                account.credentialAvailable
+                                  ? null
+                                  : jsx("span", { style: css.hint, children: text("accountCredentialMissing") })
+                              ]
+                            }),
+                            jsx(Button, {
+                              variant: account.active ? "outline" : "primary",
+                              disabled: busy || !account.credentialAvailable || account.active,
+                              onClick: () => { void switchAccount(account.id); },
+                              children: switchingAccountId === account.id
+                                ? text("switchingAccount")
+                                : text("switchAccount")
+                            })
+                          ]
+                        }, account.id))
+                ]
+              })
             ]
           }),
           jsx("p", { style: css.hint, children: text("commandHint") }),
@@ -156,4 +225,3 @@
         ]
       });
     }
-

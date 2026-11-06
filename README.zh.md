@@ -8,8 +8,8 @@
 
 ## 依赖要求
 
-- **支持的 Harness 版本：** `0.1.7-rc.1` 至 `0.1.7-rc.2`、`0.2.0-rc.1` 至 `0.2.0-rc.2`，以及 `0.2.1-rc.2` 至 `0.2.1-rc.5`，搭配 `@deepseek-ai/cordis` `^4.0.4`。开发基线为 `0.2.1-rc.5`。尚不支持 `0.2.2` alpha 线；`0.2.2-alpha.3` 仅作为不阻塞的 CI 预览运行。
-- **声明的 Harness peer 范围：** `^0.1.7-rc.1 || ^0.2.0-rc.1 || ^0.2.1-rc.2`（见 [`package.json`](package.json)）。不能把 npm 持续变化的 `latest`/`next` 标签当成支持承诺。验证范围见 [0.2.1 兼容性评估](docs/dsh-v0.2.1-rc.3-compatibility-analysis.md)。
+- **支持的 Harness 版本：** `0.1.7-rc.1` 至 `0.1.7-rc.2`、`0.2.0-rc.1` 至 `0.2.0-rc.2`、`0.2.1-rc.2` 至 `0.2.1-rc.5`，以及 `0.2.2-rc.1`，搭配 `@deepseek-ai/cordis` `^4.0.4`。开发基线为 `0.2.2-rc.1`，Cordis `^4.1.0`。`0.2.2-alpha.3` 仍仅作为不阻塞的 CI 预览，不属于支持版本。
+- **声明的 Harness peer 范围：** `^0.1.7-rc.1 || ^0.2.0-rc.1 || ^0.2.1-rc.2 || ^0.2.2-rc.1`（见 [`package.json`](package.json)）。不能把 npm 持续变化的 `latest`/`next` 标签当成支持承诺。验证范围见 [Harness 兼容性评估](docs/dsh-v0.2.1-rc.3-compatibility-analysis.md)。
 - Harness 自带的 `@deepseek-ai/dsh-llm-pi-ai` 路由，以及 `dsh-credentials-local` 等凭据服务。默认 Web profile 已提供这些组件，自定义组合需自行挂载。
 - 一个有 Copilot 使用权限的 GitHub 账号。
 - Node.js ≥ 24；执行 `dsh plugin` 命令时，`PATH` 中须有 pnpm ≥ 9。
@@ -18,19 +18,19 @@
 
 以下命令均针对 `web` profile。其默认目录是 `~/.dsh/profiles/web`；设置了 `DSH_HOME` 时则为 `$DSH_HOME/profiles/web`。
 
-### 从 npm 安装（推荐）
+### 从 GitHub 安装（账号切换功能推荐）
+
+```sh
+dsh plugin --profile web add github:Moyxi-Teacher/dsh-llm-github-copilot -w
+```
+
+这会安装组织仓库默认分支，包含账号切换功能。npm 包属于独立发布渠道，在发布新 npm 版本前不包含这些变更。如果 pnpm 提示需要批准构建，请将**提示中的精确键名**加入 profile 的 `pnpm-workspace.yaml` 中的 `allowBuilds`，然后重新执行安装命令。不要根据仓库名猜测键名。
+
+### 从 npm 安装（已发布版本）
 
 ```sh
 dsh plugin --profile web add @lujianjun19/dsh-llm-github-copilot -w
 ```
-
-### 从 GitHub 安装
-
-```sh
-dsh plugin --profile web add github:lujianjun19/dsh-llm-github-copilot -w
-```
-
-这会安装仓库默认分支，可能包含尚未发布的变更。如果 pnpm 提示需要批准构建，请将**提示中的精确键名**加入 profile 的 `pnpm-workspace.yaml` 中的 `allowBuilds`，然后重新执行安装命令。不要根据仓库名猜测键名。
 
 `dsh plugin` 会将本包注册到 profile 的 `dsh.profile.bundles`，并加载包内的 `cordis.patch.yml`。**不要再向 profile patch 添加本插件的 `insert` 条目。** 如果旧安装保留了手动注册，请在采用 bundle 安装时移除重复条目。
 
@@ -44,7 +44,7 @@ dsh web
 
 ## 更新
 
-通过 Harness 的包管理入口更新，以保持 profile 的 pnpm lockfile 和 bundle 列表同步：
+更新 npm 发布渠道时，通过 Harness 的包管理入口操作，以保持 profile 的 pnpm lockfile 和 bundle 列表同步：
 
 ```sh
 dsh plugin --profile web update @lujianjun19/dsh-llm-github-copilot --latest -w
@@ -57,6 +57,8 @@ dsh plugin --profile web add @lujianjun19/dsh-llm-github-copilot@X.Y.Z -w
 ```
 
 profile 的 pnpm `minimumReleaseAge` 策略可能延迟新版本的安装。如果实际安装版本偏旧，请检查该策略；确需放行时，仅将目标包和版本加入 `minimumReleaseAgeExclude`，再按精确版本安装。不要假设 `@latest` 一定选中了目标版本，也不要在 pnpm 管理的 profile 中混用 `npm install`。
+
+更新组织 GitHub 版本时，重新执行上面的 GitHub 安装命令以安装默认分支。npm 更新命令不会更新从 GitHub 安装的版本。
 
 重启 DSH 并硬刷新浏览器。在 **设置 → GitHub Copilot** 页面底部确认安装版本，或执行：
 
@@ -81,6 +83,12 @@ dsh plugin --profile web list @lujianjun19/dsh-llm-github-copilot
 ```
 
 `authenticated` 仅表示存在长期 token，**不代表已通过实际 API 请求验证**。只有下游路由已记录 `availableModelIds` 时，该命令才报告模型**数量**；它不会请求或列出模型。路由首次交换 token 前，可能没有数量信息。
+
+### 切换已保存账号
+
+当 `dsh-quota` 已保存 GitHub Copilot 账号时，**设置 → GitHub Copilot** 会列出公开账号名称和 ID、凭据是否可用以及当前活动账号标记。点击**切换账号**后，插件通过 Harness 标准凭据写入流程发布该账号凭据，页面随后重新读取活动标记。内置 `github-copilot` 路由仍负责模型发现与刷新。
+
+账号列表读取自 `${DSH_HOME:-~/.dsh}` 下的 `quota-config.json`；敏感字段通过账号 ID 与 `quota-secrets.json` 配对。浏览器 API 不会返回凭据或其后缀。两个文件都必须可读且格式有效。切换账号不会创建、修改或删除 quota 文件。另见 [English documentation](README.md#switch-saved-accounts)。
 
 删除本机凭据：
 
@@ -151,7 +159,7 @@ npm run test:harness -- 0.2.1-rc.2
 npm run test:harness -- 0.2.1-rc.5
 ```
 
-这些检查使用独立临时 `DSH_HOME` 和模拟 GitHub 响应，不使用你的凭据，也不发起真实 Copilot 请求。CI 还覆盖 `0.2.0-rc.2` 和 `0.2.1-rc.3`，并以不阻塞的预览方式运行 `0.2.2-alpha.3`。测试选项以及分支、PR、发布规则见[开发工作流](docs/WORKFLOW.md)。
+这些检查使用独立临时 `DSH_HOME`、合成 quota 账号凭据和模拟 GitHub 响应，并在 Chromium 中验证账号切换；不会使用你的凭据，也不会发起真实 Copilot 请求。CI 还覆盖 `0.2.0-rc.2` 和 `0.2.1-rc.3`，并以不阻塞的预览方式运行 `0.2.2-alpha.3`。测试选项以及分支、PR、发布规则见[开发工作流](docs/WORKFLOW.md)。
 
 全部检查通过后，可选择部署到本地 Web profile：
 
@@ -200,6 +208,8 @@ dsh web
 ### token 交换失败，或 token 已被吊销
 
 `/copilot-status` 只检查 token 是否已保存。短期 Copilot token 由 Harness 路由刷新；长期 GitHub token 被吊销或不可用时，需要重新登录。先按上文移除环境变量 token，退出登录，再执行 `/copilot-login`。
+
+账号切换的行为与安全处理见[切换已保存账号](#切换已保存账号)及 [English documentation](README.md#switch-saved-accounts)。
 
 ### 启动时报 `configurable provider "github-copilot" is already declared`
 

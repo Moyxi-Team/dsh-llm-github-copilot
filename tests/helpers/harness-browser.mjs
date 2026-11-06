@@ -3,14 +3,20 @@ import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { chromium } from 'playwright'
 
-async function api(page, action, method = 'GET') {
-  return page.evaluate(async ({ action, method }) => {
-    const response = await fetch(`/api/github-copilot-auth/${action}`, { method })
+async function api(page, action, method = 'GET', body) {
+  return page.evaluate(async ({ action, method, body }) => {
+    const response = await fetch(`/api/github-copilot-auth/${action}`, {
+      method,
+      ...(body === undefined ? {} : {
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+    })
     if (!response.ok) throw new Error(`Copilot ${action}: HTTP ${response.status}`)
     const payload = await response.json()
     if (!payload.ok) throw new Error(payload.error)
     return payload.value
-  }, { action, method })
+  }, { action, method, body })
 }
 
 async function openSettings(page, url) {
@@ -55,6 +61,36 @@ async function signOut(page) {
   await dialog.waitFor({ state: 'hidden' })
 }
 
+async function switchFixtureAccount(page) {
+  const result = await api(page, 'accounts')
+  assert.deepEqual(result.accounts.map(({ id, name, credentialAvailable, active }) => ({
+    id, name, credentialAvailable, active,
+  })), [
+    { id: 'fixture-account-a', name: 'Fixture Account A', credentialAvailable: true, active: false },
+    { id: 'fixture-account-b', name: 'Fixture Account B', credentialAvailable: true, active: false },
+  ])
+  assert.doesNotMatch(JSON.stringify(result), /fixture-secret/)
+  await page.getByText('Fixture Account A', { exact: false }).waitFor()
+  await page.getByText('Fixture Account B', { exact: false }).waitFor()
+
+  await page.route('**/api/github-copilot-auth/switch', async route => {
+    await new Promise(resolve => setTimeout(resolve, 300))
+    await route.continue()
+  })
+  const switchButton = page.getByRole('button', { name: 'Switch account', exact: true }).nth(1)
+  await switchButton.click()
+  const busyButton = page.getByRole('button', { name: 'Switching…', exact: true })
+  await busyButton.waitFor()
+  assert.equal(await busyButton.isDisabled(), true)
+  await page.getByText('Fixture Account B · Active', { exact: true }).waitFor()
+  await page.unroute('**/api/github-copilot-auth/switch')
+
+  const updated = await api(page, 'accounts')
+  assert.equal(updated.accounts.find(account => account.active)?.id, 'fixture-account-b')
+  assert.doesNotMatch(JSON.stringify(updated), /fixture-secret/)
+  assert.doesNotMatch(await page.locator('body').innerText(), /fixture-secret/)
+}
+
 /** Real browser + shipped Harness services; only GitHub responses are fixtures. */
 export async function checkHarnessBrowser(url, { ambient, artifacts, iconSlot }) {
   const browser = await chromium.launch({ headless: true })
@@ -66,6 +102,7 @@ export async function checkHarnessBrowser(url, { ambient, artifacts, iconSlot })
     await openSettings(page, url)
     await checkNavIcon(page, iconSlot)
     if (ambient) {
+      await switchFixtureAccount(page)
       await page.getByRole('button', { name: 'Sign out', exact: true }).waitFor()
       assert.equal((await api(page, 'status')).authenticated, true)
       await signOut(page)
@@ -87,6 +124,7 @@ export async function checkHarnessBrowser(url, { ambient, artifacts, iconSlot })
       const status = await api(page, 'status')
       assert.equal(status.authenticated, true)
       assert.equal(status.credentialRemaining, undefined)
+      await switchFixtureAccount(page)
       await signOut(page)
       await login.waitFor()
       assert.equal((await api(page, 'status')).authenticated, false)

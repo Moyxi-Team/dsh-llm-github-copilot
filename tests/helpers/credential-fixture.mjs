@@ -18,14 +18,22 @@ export async function waitFor(predicate) {
 }
 
 /** Real Harness services, isolated file, and a launch snapshot containing no user secrets. */
-export async function credentialFixture(t, { layers = [], ref = DEFAULT_OAUTH_TOKEN_ENV, seed } = {}) {
+export async function credentialFixture(t, { layers = [], ref = DEFAULT_OAUTH_TOKEN_ENV, seed, quotaHome = false } = {}) {
   t.mock.method(globalThis, 'fetch', async () => { throw new Error('No network expected in credential-plane tests') })
   const dir = await mkdtemp(join(tmpdir(), 'copilot-credentials-'))
+  const previousDshHome = process.env.DSH_HOME
+  if (quotaHome) process.env.DSH_HOME = dir
   const ctx = new Context()
   const fibers = []
   t.after(async () => {
     try { for (const fiber of fibers.reverse()) await fiber.dispose() }
-    finally { await rm(dir, { recursive: true, force: true }) }
+    finally {
+      if (quotaHome) {
+        if (previousDshHome === undefined) delete process.env.DSH_HOME
+        else process.env.DSH_HOME = previousDshHome
+      }
+      await rm(dir, { recursive: true, force: true })
+    }
   })
   ctx.provide('launchEnvironment', createLaunchEnvironmentSnapshot(layers))
   // Capture the host command boundary; importing the full command runtime would
@@ -54,14 +62,23 @@ export async function credentialFixture(t, { layers = [], ref = DEFAULT_OAUTH_TO
     assert.ok(definition, `missing command ${name}`)
     return definition.handler({})
   }
-  const request = async (action, method = 'GET') => {
+  const requestRaw = async (action, method = 'GET', body) => {
     const route = routes.get(`/api/github-copilot-auth/${action}`)
     assert.ok(route, `missing Web route ${action}`)
-    const response = await route.fetch(new Request(`http://localhost${route.path}`, { method }))
+    const response = await route.fetch(new Request(`http://localhost${route.path}`, {
+      method,
+      ...(body === undefined ? {} : {
+        headers: { 'content-type': 'application/json' },
+        body: typeof body === 'string' ? body : JSON.stringify(body),
+      }),
+    }))
+    return { response, payload: await response.json() }
+  }
+  const request = async (action, method = 'GET', body) => {
+    const { response, payload } = await requestRaw(action, method, body)
     assert.equal(response.status, 200)
-    const payload = await response.json()
     assert.equal(payload.ok, true)
     return payload.value
   }
-  return { ctx, credentials: ctx.credentials, command, request, ref }
+  return { ctx, credentials: ctx.credentials, command, request, requestRaw, ref, dir }
 }

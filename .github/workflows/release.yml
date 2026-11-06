@@ -77,4 +77,4 @@ jobs:
           dsh plugin --profile web add @lujianjun19/dsh-llm-github-copilot
           \`\`\`
 
-          See [CHANGELOG.md](https://github.com/lujianjun19/dsh-llm-github-copilot/blob/main/CHANGELOG.md) for details."
+          See [CHANGELOG.md](https://github.com/Moyxi-Teacher/dsh-llm-github-copilot/blob/main/CHANGELOG.md) for details."

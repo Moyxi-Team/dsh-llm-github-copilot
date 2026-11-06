@@ -8,6 +8,7 @@ import { DEFAULT_OAUTH_TOKEN_ENV, name, piAiRecordKey, resolveAdapterOptions } f
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const manifest = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'))
 const host = await readFile(resolve(root, 'src/host/12-apply.js'), 'utf8')
+const accountRoutes = await readFile(resolve(root, 'src/host/13-account-switching.js'), 'utf8')
 const readmes = await Promise.all(['README.md', 'README.zh.md'].map(async path => ({
   path,
   text: await readFile(resolve(root, path), 'utf8'),
@@ -15,9 +16,9 @@ const readmes = await Promise.all(['README.md', 'README.zh.md'].map(async path =
 
 // Compare executable examples, not translated prose or shell comments.
 function examples(text, language) {
-  return [...text.matchAll(new RegExp('```' + language + '\\n([\\s\\S]*?)```', 'g'))]
+  return [...text.matchAll(new RegExp('```' + language + '\\r?\\n([\\s\\S]*?)```', 'g'))]
     .map(([, body]) => body.split('\n')
-      .map(line => line.replace(/\s*#.*$/, '').trimEnd())
+      .map(line => line.split('#', 1)[0].trimEnd())
       .filter(line => line.trim().length > 0)
       .join('\n'))
 }
@@ -60,6 +61,17 @@ for (const { path, text } of readmes) {
     assert.ok(text.includes(`export ${DEFAULT_OAUTH_TOKEN_ENV}=`))
     assert.ok(text.includes(`\`${String(piAiRecordKey())}\``), 'consuming route record key')
     assert.doesNotMatch(config, /\binsert:/, 'configure the installed bundle without duplicating it')
+  })
+
+  test(`${path} documents safe quota-account switching and bilingual navigation`, () => {
+    assert.match(text, /quota-config\.json/)
+    assert.match(text, /quota-secrets\.json/)
+    assert.match(text, /credential|凭据/i)
+    assert.match(text, /README(?:\.zh)?\.md#(?:switch-saved-accounts|切换已保存账号)/)
+    assert.match(accountRoutes, /path: "\/api\/github-copilot-auth\/accounts"/)
+    assert.match(accountRoutes, /path: "\/api\/github-copilot-auth\/switch"/)
+    assert.match(accountRoutes, /credentialAvailable/)
+    assert.match(accountRoutes, /active:/)
   })
 
   test(`${path} shell examples use the published package identity and real npm scripts`, () => {

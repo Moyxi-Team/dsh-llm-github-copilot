@@ -42,7 +42,7 @@ flowchart TD
 
     subgraph PREGH["🧪 发布前 GitHub 源安装测试"]
         PULLMAIN --> CLEANGH["清理 profile slot\n删除 package.json 条目\n删除 node_modules/@lujianjun19\n临时设置 git URL 重写（HTTPS 授权）"]
-        CLEANGH --> TESTGH["测试 GitHub 源安装（装 main 源码）\ndsh plugin --profile web add\ngithub:lujianjun19/dsh-llm-github-copilot -w"]
+        CLEANGH --> TESTGH["测试 GitHub 源安装（装 main 源码）\ndsh plugin --profile web add\ngithub:Moyxi-Teacher/dsh-llm-github-copilot -w"]
         TESTGH --> VERIFYGH{"验证清单\n• 源码构建 lib/ 成功\n• cordis.patch.yml 存在\n• client.js id 正确\n• undici/deps 可 resolve\n• dump-config 识别插件"}
         VERIFYGH -- ❌ --> FIXGH["直接修复\n回到编辑阶段（未打 tag，无需升版）"]
         FIXGH --> CODE
@@ -108,8 +108,8 @@ npm run test:harness -- 0.2.1-rc.5
 
 脚本下载对应的完整 Harness（显式启用其 peer 安装），通过 `npm pack` 生成本地
 插件包，再用 `dsh plugin add` 装入独立的临时 `DSH_HOME`。随后验证 bundle、运行时依赖、
-配置树、实际 Web 启动、未认证 API 的 401、设置导航的 Copilot 图标、浏览器登录/退出和
-外部 token 残留提示。
+配置树、实际 Web 启动、未认证 API 的 401、设置导航的 Copilot 图标、合成 quota 账号切换、
+浏览器登录/退出和外部 token 残留提示。
 DeepSeek 首次账号引导在测试 profile 中关闭，避免它遮挡 Copilot 设置页。
 
 GitHub 端点由测试 fixture 返回设备码、等待和授权响应；不会访问真实 GitHub 授权端点，

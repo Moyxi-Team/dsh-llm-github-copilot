@@ -8,8 +8,8 @@ This plugin provides a GitHub OAuth device-flow page and slash commands, then wr
 
 ## Requirements
 
-- **Supported Harness releases:** `0.1.7-rc.1` through `0.1.7-rc.2`, `0.2.0-rc.1` through `0.2.0-rc.2`, and `0.2.1-rc.2` through `0.2.1-rc.5`, with `@deepseek-ai/cordis` `^4.0.4`. The development baseline is `0.2.1-rc.5`. The `0.2.2` alpha line is not supported yet; `0.2.2-alpha.3` runs only as a non-blocking CI preview.
-- **Declared Harness peer range:** `^0.1.7-rc.1 || ^0.2.0-rc.1 || ^0.2.1-rc.2` (see [`package.json`](package.json)). npm's moving `latest`/`next` tags are not a support guarantee. See the [0.2.1 compatibility assessment](docs/dsh-v0.2.1-rc.3-compatibility-analysis.md) for validation scope.
+- **Supported Harness releases:** `0.1.7-rc.1` through `0.1.7-rc.2`, `0.2.0-rc.1` through `0.2.0-rc.2`, `0.2.1-rc.2` through `0.2.1-rc.5`, and `0.2.2-rc.1`, with `@deepseek-ai/cordis` `^4.0.4`. The development baseline is `0.2.2-rc.1` with Cordis `^4.1.0`. `0.2.2-alpha.3` remains a non-blocking CI preview, not a supported release.
+- **Declared Harness peer range:** `^0.1.7-rc.1 || ^0.2.0-rc.1 || ^0.2.1-rc.2 || ^0.2.2-rc.1` (see [`package.json`](package.json)). npm's moving `latest`/`next` tags are not a support guarantee. See the [Harness compatibility assessment](docs/dsh-v0.2.1-rc.3-compatibility-analysis.md) for validation scope.
 - The Harness's bundled `@deepseek-ai/dsh-llm-pi-ai` route and a credentials service such as `dsh-credentials-local`. The default Web profile supplies these; custom compositions must mount them.
 - A GitHub account with access to Copilot.
 - Node.js ≥ 24; pnpm ≥ 9 on `PATH` for `dsh plugin` commands.
@@ -18,19 +18,19 @@ This plugin provides a GitHub OAuth device-flow page and slash commands, then wr
 
 The commands below target the `web` profile. Its default directory is `~/.dsh/profiles/web`; if `DSH_HOME` is set, it is `$DSH_HOME/profiles/web`.
 
-### From npm (recommended)
+### From GitHub (recommended for account switching)
+
+```sh
+dsh plugin --profile web add github:Moyxi-Teacher/dsh-llm-github-copilot -w
+```
+
+This installs the organization repository's default branch, including the account-switching changes. The npm package is a separate release channel and does not include these changes until a new npm version is published. If pnpm asks for build approval, copy the **exact key it reports** into `allowBuilds` in the profile's `pnpm-workspace.yaml`, then repeat the command. Do not guess the key from the repository name.
+
+### From npm (published release)
 
 ```sh
 dsh plugin --profile web add @lujianjun19/dsh-llm-github-copilot -w
 ```
-
-### From GitHub
-
-```sh
-dsh plugin --profile web add github:lujianjun19/dsh-llm-github-copilot -w
-```
-
-This installs the repository's default branch, which may contain unreleased changes. If pnpm asks for build approval, copy the **exact key it reports** into `allowBuilds` in the profile's `pnpm-workspace.yaml`, then repeat the command. Do not guess the key from the repository name.
 
 `dsh plugin` registers this package in the profile's `dsh.profile.bundles` and loads its bundled `cordis.patch.yml`. **Do not add another `insert` entry for this plugin to the profile patch.** If an older installation has a manual registration, remove that duplicate when using the bundle installation.
 
@@ -44,7 +44,7 @@ Hard-refresh an already open browser tab after updating the plugin's client bund
 
 ## Update
 
-Use the Harness package manager so the profile's pnpm lockfile and bundle list stay in sync:
+For the npm release channel, use the Harness package manager so the profile's pnpm lockfile and bundle list stay in sync:
 
 ```sh
 dsh plugin --profile web update @lujianjun19/dsh-llm-github-copilot --latest -w
@@ -57,6 +57,8 @@ dsh plugin --profile web add @lujianjun19/dsh-llm-github-copilot@X.Y.Z -w
 ```
 
 A profile's pnpm `minimumReleaseAge` policy can delay newly published versions. If the installed version is older than expected, check that policy and, if appropriate, allow only the intended package/version through `minimumReleaseAgeExclude`, then install the exact version. Do not assume `@latest` selected the release you wanted, or mix `npm install` into a pnpm-managed profile.
+
+For the organization GitHub build, rerun the GitHub installation command above to install the default branch. The npm update command does not update a GitHub-sourced installation.
 
 Restart DSH and hard-refresh the browser. Confirm the installed version at the bottom of **Settings → GitHub Copilot**, or run:
 
@@ -81,6 +83,12 @@ Check the stored credential state with:
 ```
 
 `authenticated` means a long-lived token is present, **not** that a live API request succeeded. The command reports a model **count** only if the downstream route has recorded `availableModelIds`; it does not fetch or list models. Before the route's first token exchange, that count may be absent.
+
+### Switch saved accounts
+
+When `dsh-quota` has saved GitHub Copilot accounts, **Settings → GitHub Copilot** lists each account's public name and ID, whether a credential is available, and which account is active. Choose **Switch account** to publish that account's credential through the plugin's normal Harness credential write; the page then reloads the active marker. The built-in `github-copilot` route remains responsible for model discovery and refresh.
+
+The list is read from `quota-config.json` in `${DSH_HOME:-~/.dsh}`. Account secrets are paired by account ID from `quota-secrets.json`; the browser API never returns a credential or its suffix. Both files must be readable and valid. Account switching does not create, edit, or delete quota files. See the [中文说明](README.zh.md#切换已保存账号).
 
 To remove the local credential:
 
@@ -151,7 +159,7 @@ npm run test:harness -- 0.2.1-rc.2
 npm run test:harness -- 0.2.1-rc.5
 ```
 
-These checks use a disposable `DSH_HOME` and simulated GitHub responses, not your credentials or a real Copilot request. CI also covers `0.2.0-rc.2` and `0.2.1-rc.3`, plus `0.2.2-alpha.3` as a non-blocking preview. See [the development workflow](docs/WORKFLOW.md) for test options and branch, PR, and release rules.
+These checks use a disposable `DSH_HOME`, synthetic quota-account secrets, and simulated GitHub responses; they exercise account switching in Chromium without using your credentials or making a real Copilot request. CI also covers `0.2.0-rc.2` and `0.2.1-rc.3`, plus `0.2.2-alpha.3` as a non-blocking preview. See [the development workflow](docs/WORKFLOW.md) for test options and branch, PR, and release rules.
 
 After all checks pass, optionally deploy into the local Web profile:
 
@@ -200,6 +208,8 @@ Check access to GitHub. Device-flow requests honor `https_proxy`/`HTTPS_PROXY`/`
 ### Token exchange fails, or a token was revoked
 
 `/copilot-status` only checks that a token is stored. Short-lived Copilot token refresh is the Harness route's responsibility; a revoked or unusable long-lived GitHub token needs a new sign-in. Remove any ambient token as described above, sign out, then run `/copilot-login` again.
+
+For account-switching behavior and safe credential handling, see [Switch saved accounts](#switch-saved-accounts) and the [中文说明](README.zh.md#切换已保存账号).
 
 ### `configurable provider "github-copilot" is already declared`
 

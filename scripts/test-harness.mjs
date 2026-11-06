@@ -11,15 +11,14 @@ import { checkHarnessBrowser } from '../tests/helpers/harness-browser.mjs'
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const manifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'))
 const version = process.argv[2] ?? '0.2.1-rc.5'
-// Supported RCs, plus 0.2.2 alpha previews that exercise newer Harness surfaces
-// (such as settings.section.icon) without declaring support for that line.
-assert.match(version, /^0\.(?:(?:1\.7|2\.[01])-rc|2\.2-alpha)\.\d+$/, 'pass an exact supported Harness RC or a 0.2.2 alpha preview')
+assert.match(version, /^0\.(?:(?:1\.7|2\.[01])-rc|2\.2-(?:alpha|rc))\.\d+$/, 'pass an exact supported Harness RC or a 0.2.2 preview')
 const work = await mkdtemp(join(tmpdir(), `copilot-harness-${version}-`))
 const install = process.env.DSH_TEST_INSTALL ? resolve(process.env.DSH_TEST_INSTALL) : join(work, 'installation')
 const home = join(work, 'home')
 // No user credentials or project .env are inherited into this disposable profile.
 const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => [
   'PATH', 'HOME', 'USER', 'LOGNAME', 'LANG', 'LC_ALL', 'TMPDIR', 'TMP', 'TEMP', 'SystemRoot',
+  'PLAYWRIGHT_BROWSERS_PATH', 'NODE_OPTIONS',
   'HTTPS_PROXY', 'https_proxy', 'HTTP_PROXY', 'http_proxy', 'NO_PROXY', 'no_proxy', 'NODE_EXTRA_CA_CERTS',
 ].includes(key)))
 env.DSH_HOME = home
@@ -27,7 +26,10 @@ let browserServer
 let success = false
 
 async function run(command, args, phase, cwd = work) {
-  const result = spawnSync(command, args, { cwd, env, encoding: 'utf8', timeout: 300000, maxBuffer: 16 * 1024 * 1024 })
+  const npmCli = process.env.npm_execpath
+  const executable = command === 'npm' && npmCli ? process.execPath : command
+  const commandArgs = command === 'npm' && npmCli ? [npmCli, ...args] : args
+  const result = spawnSync(executable, commandArgs, { cwd, env, encoding: 'utf8', timeout: 300000, maxBuffer: 16 * 1024 * 1024 })
   await writeFile(join(work, `${phase}.log`), (result.stdout ?? '') + (result.stderr ?? ''))
   assert.equal(result.status, 0, `${phase} failed; see ${join(work, `${phase}.log`)}`)
   return result.stdout
@@ -55,7 +57,7 @@ async function startServer(cli, ambient) {
   const args = [cli, 'web', '--no-open', '--port', String(await port())]
   const serverEnv = {
     ...env,
-    NODE_OPTIONS: `--import=${pathToFileURL(join(root, 'tests/fixtures/github-device-flow.mjs')).href}`,
+    NODE_OPTIONS: [env.NODE_OPTIONS, `--import=${pathToFileURL(join(root, 'tests/fixtures/github-device-flow.mjs')).href}`].filter(Boolean).join(' '),
     ...(ambient ? { GITHUB_COPILOT_OAUTH_TOKEN: 'ghu_ambient_smoke_not_a_real_token' } : {}),
   }
   browserServer = spawn(process.execPath, args, { cwd: work, env: serverEnv, stdio: ['ignore', 'pipe', 'pipe'] })
@@ -99,6 +101,23 @@ try {
   assert.ok((await readFile(join(plugin, 'lib/client.js'), 'utf8')).includes(`id: "${manifest.name}"`))
   const require = createRequire(join(plugin, 'lib/index.js'))
   for (const dependency of Object.keys(manifest.dependencies)) require.resolve(dependency)
+  await writeFile(join(home, 'quota-config.json'), JSON.stringify({
+    accounts: [
+      { id: 'fixture-account-a', provider: 'github_copilot', name: 'Fixture Account A', apiKey: null },
+      { id: 'fixture-account-b', provider: 'github_copilot', name: 'Fixture Account B', sessionToken: '' },
+    ],
+  }))
+  await writeFile(join(home, 'quota-secrets.json'), JSON.stringify({
+    version: 1,
+    secrets: {
+      providers: {},
+      accounts: {
+        'fixture-account-a': { apiKey: 'fixture-secret-account-a' },
+        'fixture-account-b': { sessionToken: 'fixture-secret-account-b' },
+      },
+      custom: {},
+    },
+  }))
   for (const ambient of [true, false]) {
     const url = await startServer(cli, ambient)
     const unauthenticated = await fetch(`${new URL(url).origin}/api/github-copilot-auth/status`)

@@ -29,6 +29,14 @@ needs.
 _Avoid_: credential (the plugin also uses a plain reference; the record is the
 one the handoff depends on), secret.
 
+**Quota account**:
+A `github_copilot` account entry in `quota-config.json`, with secret fields
+merged by stringified account ID from `quota-secrets.json`. This plugin may
+publish one account's supported credential through the standard Grant-record
+write; it does not own quota configuration or secrets-file editing.
+_Avoid_: account credential in browser responses (only public name, ID,
+availability, and active state are exposed).
+
 **Handoff**:
 Writing the Grant record and stopping. Everything downstream — token exchange,
 refresh, endpoint derivation, model filtering, requests — is the Consuming

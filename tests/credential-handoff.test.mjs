@@ -166,6 +166,8 @@ test('apply registers the Web OAuth routes on the authenticated shared /api chan
     { path: '/api/github-copilot-auth/status', methods: ['GET'], requestBody: 'buffered' },
     { path: '/api/github-copilot-auth/login', methods: ['POST'], requestBody: 'buffered' },
     { path: '/api/github-copilot-auth/logout', methods: ['POST'], requestBody: 'buffered' },
+    { path: '/api/github-copilot-auth/accounts', methods: ['GET'], requestBody: 'buffered' },
+    { path: '/api/github-copilot-auth/switch', methods: ['POST'], requestBody: 'buffered' },
   ])
   for (const route of registered) assert.equal(typeof route.fetch, 'function')
   // The status route resolves without a credentials service; its Fetch handler

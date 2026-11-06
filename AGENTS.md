@@ -325,7 +325,7 @@ the slot (step 1) and repeat with the explicit version rather than `@latest`.
 ### 3. Test — install from GitHub source
 
 ```bash
-dsh plugin --profile web add github:lujianjun19/dsh-llm-github-copilot -w
+dsh plugin --profile web add github:Moyxi-Teacher/dsh-llm-github-copilot -w
 ```
 
 The `-w` flag and `allowBuilds` entry in `pnpm-workspace.yaml` are required;

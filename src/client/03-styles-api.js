@@ -6,6 +6,10 @@
       row: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" },
       status: { display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 500, color: "var(--dsw-alias-label-primary)" },
       actions: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" },
+      accountList: { display: "flex", flexDirection: "column", gap: 10, paddingTop: 16, borderTop: "1px solid var(--dsw-alias-border-l2)" },
+      accountRow: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" },
+      accountMeta: { display: "flex", flexDirection: "column", gap: 2, minWidth: 0 },
+      accountId: { fontSize: 12, lineHeight: "18px", color: "var(--dsw-alias-label-tertiary)", overflowWrap: "anywhere" },
       field: { display: "flex", flexDirection: "column", gap: 8 },
       label: { fontSize: 13, fontWeight: 500, color: "var(--dsw-alias-label-secondary)" },
       link: { color: "var(--dsw-alias-brand-primary)", fontSize: 14, lineHeight: "22px", overflowWrap: "anywhere" },
@@ -19,10 +23,14 @@
       versionLink: { color: "var(--dsw-alias-brand-primary)" }
     };
 
-    async function request(path, method = "GET") {
+    async function request(path, method = "GET", body) {
       const response = await fetch(`${API}${path}`, {
         method,
-        headers: { accept: "application/json" },
+        headers: {
+          accept: "application/json",
+          ...(body === void 0 ? {} : { "content-type": "application/json" })
+        },
+        ...(body === void 0 ? {} : { body: JSON.stringify(body) }),
         cache: "no-store"
       });
       let payload;
@@ -36,4 +44,3 @@
       }
       return payload.value;
     }
-
