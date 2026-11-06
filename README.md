@@ -6,7 +6,7 @@ English | [中文](README.zh.md)
 
 ## Project origin and differences
 
-The comparison was checked on 2026-11-06 against upstream `main` at [`0e327a9`](https://github.com/lujianjun19/dsh-llm-github-copilot/commit/0e327a90a47595ab732e72ec38e23cad7feb9633). Organization `main` is at [`e106b4e`](https://github.com/Moyxi-Team/dsh-llm-github-copilot/commit/e106b4e389b2a3135bf0db477a19ca7ab100c503), two commits ahead of that upstream baseline. The verifiable organization-specific differences are:
+The comparison was checked on 2026-11-06 against upstream `main` at [`0e327a9`](https://github.com/lujianjun19/dsh-llm-github-copilot/commit/0e327a90a47595ab732e72ec38e23cad7feb9633). The account-switching implementation was added in organization commit [`e106b4e`](https://github.com/Moyxi-Team/dsh-llm-github-copilot/commit/e106b4e389b2a3135bf0db477a19ca7ab100c503); the current organization `main` also contains the follow-up attribution update. At the time of comparison, the organization branch was two commits ahead of that upstream baseline. The verifiable organization-specific differences are:
 
 - Adds Host endpoints and a bilingual Settings UI for switching among saved `github_copilot` quota accounts.
 - Pairs quota account metadata and secrets by account ID, then activates the selected credential through the Harness credential service. The browser receives public account metadata and active state, never tokens or token suffixes.

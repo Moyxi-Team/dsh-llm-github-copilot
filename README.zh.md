@@ -6,7 +6,7 @@
 
 ## 项目来源与差异
 
-差异核对时间为 2026-11-06，基准为上游 `main` 的 [`0e327a9`](https://github.com/lujianjun19/dsh-llm-github-copilot/commit/0e327a90a47595ab732e72ec38e23cad7feb9633)。组织仓库 `main` 当前位于 [`e106b4e`](https://github.com/Moyxi-Team/dsh-llm-github-copilot/commit/e106b4e389b2a3135bf0db477a19ca7ab100c503)，比该上游基准多两个提交。可核实的组织版额外差异包括：
+差异核对时间为 2026-11-06，基准为上游 `main` 的 [`0e327a9`](https://github.com/lujianjun19/dsh-llm-github-copilot/commit/0e327a90a47595ab732e72ec38e23cad7feb9633)。账号切换功能由组织仓库提交 [`e106b4e`](https://github.com/Moyxi-Team/dsh-llm-github-copilot/commit/e106b4e389b2a3135bf0db477a19ca7ab100c503) 引入；当前组织 `main` 还包含后续的来源标注更新。核对时组织分支比该上游基准多两个提交。可核实的组织版额外差异包括：
 
 - 新增 Host API 和中英文设置界面，用于切换已保存的 `github_copilot` quota 账号。
 - 按账号 ID 配对 quota 账号元数据与 secrets，再通过 Harness 凭据服务激活所选凭据。浏览器只接收公开账号信息和活动状态，不会收到 token 或 token 后缀。
