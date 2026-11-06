@@ -6,6 +6,19 @@
 
 本插件提供 GitHub OAuth 设备流登录页面和斜杠命令，并写入 Harness 内置 `github-copilot` 提供方使用的凭据。它**不注册 LLM 适配器**，也不维护模型目录：token 交换与刷新、模型可用性、请求、图片和流式处理均由 Harness 的 `@deepseek-ai/dsh-llm-pi-ai` 路由负责。可用模型取决于该路由的目录和账号权限，而不只取决于 Copilot 订阅。参见 [ADR-0002](docs/adr/0002-narrow-to-credential-provider.md)。
 
+## 项目来源与差异
+
+这是由 **Moyxi-Team 维护的 GitHub 源码版本**，基于上游 [`lujianjun19/dsh-llm-github-copilot`](https://github.com/lujianjun19/dsh-llm-github-copilot) 项目。它不是上游仓库本身，也不是 DeepSeek 或 GitHub 官方产品。
+
+差异核对时间为 2026-11-06：组织仓库 `main` 位于 [`00b6841`](https://github.com/Moyxi-Team/dsh-llm-github-copilot/commit/00b68415546692a4600fd004737ccd9e75cfddfc)，比上游 `main` 的 [`0e327a9`](https://github.com/lujianjun19/dsh-llm-github-copilot/commit/0e327a90a47595ab732e72ec38e23cad7feb9633) 多一个提交。组织版新增了**在已保存的 `github_copilot` quota 账号之间切换**：按账号 ID 配对公开账号信息和 secrets，通过 Harness 凭据服务激活所选账号，并提供中英文设置界面。浏览器只会收到账号信息和活动状态，不会收到 token 或 token 后缀；相关测试使用合成数据。
+
+两种安装渠道彼此独立：
+
+- **Moyxi-Team GitHub 源码版**（`github:Moyxi-Team/dsh-llm-github-copilot`）安装组织仓库的 `main` 分支；本文介绍的账号切换功能通过此渠道提供。
+- **上游 npm 包**（`@lujianjun19/dsh-llm-github-copilot`）沿用上游包名并按上游 npm 发布更新。截至 2026-11-06 核实到的最新发布版为 `0.4.12`；组织仓库的变更不会自动进入该 npm 包。通过 npm 更新也不会更新从 GitHub 安装的版本。
+
+切换账号要求 `${DSH_HOME:-~/.dsh}` 中的 `quota-config.json` 和 `quota-secrets.json` 可读且格式有效，并且其中存在 `github_copilot` 账号及所选账号支持的凭据。本插件只读取这些文件以提供切换功能，再通过 Harness 写入所选凭据；不会创建、编辑或删除 quota 账号或文件。完整行为和限制见[切换已保存账号](#切换已保存账号)。
+
 ## 依赖要求
 
 - **支持的 Harness 版本：** `0.1.7-rc.1` 至 `0.1.7-rc.2`、`0.2.0-rc.1` 至 `0.2.0-rc.2`、`0.2.1-rc.2` 至 `0.2.1-rc.5`，以及 `0.2.2-rc.1`，搭配 `@deepseek-ai/cordis` `^4.0.4`。开发基线为 `0.2.2-rc.1`，Cordis `^4.1.0`。`0.2.2-alpha.3` 仍仅作为不阻塞的 CI 预览，不属于支持版本。
@@ -18,15 +31,15 @@
 
 以下命令均针对 `web` profile。其默认目录是 `~/.dsh/profiles/web`；设置了 `DSH_HOME` 时则为 `$DSH_HOME/profiles/web`。
 
-### 从 GitHub 安装（账号切换功能推荐）
+### 从 Moyxi-Team GitHub 源码安装（含账号切换）
 
 ```sh
-dsh plugin --profile web add github:Moyxi-Teacher/dsh-llm-github-copilot -w
+dsh plugin --profile web add github:Moyxi-Team/dsh-llm-github-copilot -w
 ```
 
-这会安装组织仓库默认分支，包含账号切换功能。npm 包属于独立发布渠道，在发布新 npm 版本前不包含这些变更。如果 pnpm 提示需要批准构建，请将**提示中的精确键名**加入 profile 的 `pnpm-workspace.yaml` 中的 `allowBuilds`，然后重新执行安装命令。不要根据仓库名猜测键名。
+这会安装组织仓库的默认分支。需要组织版账号切换功能时，请使用此源码渠道，而不是上游 npm 包。如果 pnpm 提示需要批准构建，请将**提示中的精确键名**加入 profile 的 `pnpm-workspace.yaml` 中的 `allowBuilds`，然后重新执行安装命令。不要根据仓库名猜测键名。
 
-### 从 npm 安装（已发布版本）
+### 从上游 npm 包安装（上游发布渠道）
 
 ```sh
 dsh plugin --profile web add @lujianjun19/dsh-llm-github-copilot -w
@@ -58,7 +71,7 @@ dsh plugin --profile web add @lujianjun19/dsh-llm-github-copilot@X.Y.Z -w
 
 profile 的 pnpm `minimumReleaseAge` 策略可能延迟新版本的安装。如果实际安装版本偏旧，请检查该策略；确需放行时，仅将目标包和版本加入 `minimumReleaseAgeExclude`，再按精确版本安装。不要假设 `@latest` 一定选中了目标版本，也不要在 pnpm 管理的 profile 中混用 `npm install`。
 
-更新组织 GitHub 版本时，重新执行上面的 GitHub 安装命令以安装默认分支。npm 更新命令不会更新从 GitHub 安装的版本。
+更新 Moyxi-Team GitHub 版本时，重新执行上面的 GitHub 安装命令以安装默认分支。npm 更新命令不会更新从 GitHub 安装的版本。
 
 重启 DSH 并硬刷新浏览器。在 **设置 → GitHub Copilot** 页面底部确认安装版本，或执行：
 

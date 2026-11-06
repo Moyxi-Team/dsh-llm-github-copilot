@@ -74,8 +74,17 @@ for (const { path, text } of readmes) {
     assert.match(accountRoutes, /active:/)
   })
 
+  test(`${path} distinguishes the organization source from the upstream project and npm package`, () => {
+    assert.ok(text.includes('Moyxi-Team/dsh-llm-github-copilot'))
+    assert.ok(text.includes('@lujianjun19/dsh-llm-github-copilot'))
+    assert.ok(text.includes('00b68415546692a4600fd004737ccd9e75cfddfc'))
+    assert.ok(text.includes('0e327a90a47595ab732e72ec38e23cad7feb9633'))
+    assert.doesNotMatch(text, /Moyxi-Teacher/, 'the renamed organization handle must not appear')
+  })
+
   test(`${path} shell examples use the published package identity and real npm scripts`, () => {
     const shell = examples(text, 'sh').join('\n')
+    assert.ok(shell.includes('dsh plugin --profile web add github:Moyxi-Team/dsh-llm-github-copilot -w'))
     assert.ok(shell.includes(`dsh plugin --profile web add ${manifest.name} -w`))
     assert.ok(shell.includes(`dsh plugin --profile web update ${manifest.name} --latest -w`))
     assert.ok(shell.includes(`dsh plugin --profile web add ${manifest.name}@X.Y.Z -w`))

@@ -73,7 +73,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Moyxi-Teacher/dsh-llm-github-copilot.git"
+    "url": "git+https://github.com/Moyxi-Team/dsh-llm-github-copilot.git"
   },
   "engines": {
     "node": ">=24"

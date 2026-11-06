@@ -6,6 +6,19 @@ GitHub Copilot sign-in for [DeepSeek Harness](https://github.com/deepseek-ai/dee
 
 This plugin provides a GitHub OAuth device-flow page and slash commands, then writes the credential used by the Harness's built-in `github-copilot` provider. It registers **no LLM adapter** and owns no model catalog: token exchange and refresh, model availability, requests, images, and streaming belong to the Harness's `@deepseek-ai/dsh-llm-pi-ai` route. Available models depend on that route's catalog and your account's access, not just your Copilot plan. See [ADR-0002](docs/adr/0002-narrow-to-credential-provider.md).
 
+## Project origin and differences
+
+This is the **Moyxi-Team-maintained GitHub source** derived from the upstream [`lujianjun19/dsh-llm-github-copilot`](https://github.com/lujianjun19/dsh-llm-github-copilot) project. It is not the upstream project itself, and it is not an official DeepSeek or GitHub product.
+
+The comparison was checked on 2026-11-06: organization `main` was at [`00b6841`](https://github.com/Moyxi-Team/dsh-llm-github-copilot/commit/00b68415546692a4600fd004737ccd9e75cfddfc), one commit ahead of upstream `main` at [`0e327a9`](https://github.com/lujianjun19/dsh-llm-github-copilot/commit/0e327a90a47595ab732e72ec38e23cad7feb9633). The organization commit adds **switching among saved `github_copilot` quota accounts**: it pairs account metadata and secrets by account ID, uses the Harness credential service to activate a selected account, and provides a bilingual settings UI. The browser receives account metadata and active state, never tokens or token suffixes. It also adds synthetic-fixture tests for this behavior.
+
+The two installation channels are separate:
+
+- **Moyxi-Team GitHub source** (`github:Moyxi-Team/dsh-llm-github-copilot`) installs the organization repository's `main` branch and is the channel for the account-switching changes described here.
+- **Upstream npm package** (`@lujianjun19/dsh-llm-github-copilot`) is published under the upstream package name and follows upstream npm releases. The latest published version checked on 2026-11-06 was `0.4.12`; it does not acquire organization-only changes just because this GitHub repository changes. npm updates do not update a GitHub-sourced installation.
+
+Account switching requires readable, valid `quota-config.json` and `quota-secrets.json` files in `${DSH_HOME:-~/.dsh}`, with saved `github_copilot` accounts and a supported credential for the chosen account. This plugin only reads those files to offer a switch and writes the selected credential through Harness; it does not create, edit, or delete quota accounts or files. See [Switch saved accounts](#switch-saved-accounts) for the full behavior and limits.
+
 ## Requirements
 
 - **Supported Harness releases:** `0.1.7-rc.1` through `0.1.7-rc.2`, `0.2.0-rc.1` through `0.2.0-rc.2`, `0.2.1-rc.2` through `0.2.1-rc.5`, and `0.2.2-rc.1`, with `@deepseek-ai/cordis` `^4.0.4`. The development baseline is `0.2.2-rc.1` with Cordis `^4.1.0`. `0.2.2-alpha.3` remains a non-blocking CI preview, not a supported release.
@@ -18,15 +31,15 @@ This plugin provides a GitHub OAuth device-flow page and slash commands, then wr
 
 The commands below target the `web` profile. Its default directory is `~/.dsh/profiles/web`; if `DSH_HOME` is set, it is `$DSH_HOME/profiles/web`.
 
-### From GitHub (recommended for account switching)
+### From the Moyxi-Team GitHub source (account switching)
 
 ```sh
-dsh plugin --profile web add github:Moyxi-Teacher/dsh-llm-github-copilot -w
+dsh plugin --profile web add github:Moyxi-Team/dsh-llm-github-copilot -w
 ```
 
-This installs the organization repository's default branch, including the account-switching changes. The npm package is a separate release channel and does not include these changes until a new npm version is published. If pnpm asks for build approval, copy the **exact key it reports** into `allowBuilds` in the profile's `pnpm-workspace.yaml`, then repeat the command. Do not guess the key from the repository name.
+This installs the organization repository's default branch. For the organization-specific account-switching feature, use this source rather than the upstream npm package. If pnpm asks for build approval, copy the **exact key it reports** into `allowBuilds` in the profile's `pnpm-workspace.yaml`, then repeat the command. Do not guess the key from the repository name.
 
-### From npm (published release)
+### From the upstream npm package (upstream release channel)
 
 ```sh
 dsh plugin --profile web add @lujianjun19/dsh-llm-github-copilot -w
@@ -58,7 +71,7 @@ dsh plugin --profile web add @lujianjun19/dsh-llm-github-copilot@X.Y.Z -w
 
 A profile's pnpm `minimumReleaseAge` policy can delay newly published versions. If the installed version is older than expected, check that policy and, if appropriate, allow only the intended package/version through `minimumReleaseAgeExclude`, then install the exact version. Do not assume `@latest` selected the release you wanted, or mix `npm install` into a pnpm-managed profile.
 
-For the organization GitHub build, rerun the GitHub installation command above to install the default branch. The npm update command does not update a GitHub-sourced installation.
+For the Moyxi-Team GitHub build, rerun the GitHub installation command above to install the default branch. The npm update command does not update a GitHub-sourced installation.
 
 Restart DSH and hard-refresh the browser. Confirm the installed version at the bottom of **Settings → GitHub Copilot**, or run:
 

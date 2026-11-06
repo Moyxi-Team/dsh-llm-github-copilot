@@ -42,7 +42,7 @@ flowchart TD
 
     subgraph PREGH["🧪 发布前 GitHub 源安装测试"]
         PULLMAIN --> CLEANGH["清理 profile slot\n删除 package.json 条目\n删除 node_modules/@lujianjun19\n临时设置 git URL 重写（HTTPS 授权）"]
-        CLEANGH --> TESTGH["测试 GitHub 源安装（装 main 源码）\ndsh plugin --profile web add\ngithub:Moyxi-Teacher/dsh-llm-github-copilot -w"]
+        CLEANGH --> TESTGH["测试 GitHub 源安装（装 main 源码）\ndsh plugin --profile web add\ngithub:Moyxi-Team/dsh-llm-github-copilot -w"]
         TESTGH --> VERIFYGH{"验证清单\n• 源码构建 lib/ 成功\n• cordis.patch.yml 存在\n• client.js id 正确\n• undici/deps 可 resolve\n• dump-config 识别插件"}
         VERIFYGH -- ❌ --> FIXGH["直接修复\n回到编辑阶段（未打 tag，无需升版）"]
         FIXGH --> CODE
